@@ -1,5 +1,6 @@
 import numpy as np
 import random
+from matplotlib import pyplot as plt
 
 #Consts
 SCALE = 2000
@@ -11,7 +12,9 @@ def error_info(errors):
     print "Max Error", max(errors)
     print "Min Error", min(errors)
     print "Error Std", np.std(errors)
-
+    plt.hist(errors, bins = len(set(errors)))
+    plt.show()
+    
 def test_matrix(mat, k):
     m,n = mat.shape
     num_unif_trials = 10
@@ -28,9 +31,6 @@ def test_matrix(mat, k):
         error =  abs(1 - np.linalg.norm(mat * vec, ord='fro')**2 / np.linalg.norm(vec, ord='fro')**2)
         errors.append(error)
     error_info(errors)
-        
-    
-    
 
 
 
