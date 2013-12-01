@@ -6,6 +6,9 @@ from matplotlib import pyplot as plt
 SCALE = 2000
 
 
+def coherence(matrix):
+    row, col = matrix.shape
+    return max([ np.dot(matrix[:,i],matrix[:,j]) for i in xrange(col) for j in xrange(i+1, col)  ])
 
 def error_info(errors):
     print "Average Error", np.average(errors)
@@ -18,6 +21,7 @@ def error_info(errors):
 def test_matrix(mat, k):
     m,n = mat.shape
     num_unif_trials = 10
+    print "Coherence", coherence(mat)
     
     # Generate random vectors of length n that are k sparse uniform random values
     errors = []
@@ -36,4 +40,4 @@ def test_matrix(mat, k):
 
 
 if __name__ == "__main__":
-    test_matrix(np.eye(10), 2)
+    print coherence(np.eye(10))
