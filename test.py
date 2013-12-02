@@ -94,8 +94,7 @@ def gradient_descent(mat, k):
         for index in xrange(k):
             deriv = 0
             for i in xrange(m):
-                for j in xrange(n):
-                    deriv += 2*mat[i][locs[index]]*mat[i][j]*vec[j]
+                deriv += 2*mat[i][locs[index]]*np.dot(np.array(mat[i]),np.array(vec))
             gradient[locs[index]][0] = deriv - 2 * vec[locs[index]]
         #move in direction of gradient
         prev_vec = np.copy(vec)
@@ -136,5 +135,5 @@ if __name__ == "__main__":
             #unif_error.append( (k,n,N,test_matrix(random_bernoulli(n, N), int(k)) ) )
     print unif_error
     """
-    #gradient_descent(random_bernoulli(25,100), 2)
-    haar_decomp("natural.jpg")
+    gradient_descent(random_bernoulli(25,100), 2)
+    #haar_decomp("natural.jpg")
