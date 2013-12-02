@@ -3,10 +3,6 @@ import random
 from scipy.linalg import hadamard
 from matplotlib import pyplot as plt
 
-#Consts
-SCALE = 2000
-
-
 # k = O(delta n/log(2N/n) )
 # 
 def random_bernoulli(n,N):
