@@ -1,5 +1,7 @@
 import numpy as np
 import random
+import Image
+#import pywt
 from scipy.linalg import hadamard
 from matplotlib import pyplot as plt
 import math
@@ -95,11 +97,13 @@ def gradient_descent(mat, k):
         gradient = np.matrix(np.zeros(n)).T
         #find the gradient
         for index in xrange(k):
-            deriv = 0
+            gprimex = 0
             for i in xrange(m):
-                for j in xrange(n):
-                    deriv += 2*mat[i][locs[index]]*mat[i][j]*vec[j]
-            gradient[locs[index]][0] = deriv - 2 * vec[locs[index]]
+                gprimex += 2*mat[i][locs[index]]*np.dot(np.array(mat[i]),np.array(vec))
+            hprimex = 2*vec[locs[index]]
+            gx = np.linalg.norm(mat*vec)**2
+            hx = np.linalg.norm(vec)**2
+            gradient[locs[index]][0] = (gprimex*hx - hprimex*gx)/(hx*hx)
         #move in direction of gradient
         prev_vec = np.copy(vec)
         if go_pos:
@@ -138,7 +142,7 @@ def run_test_suite(n, N, k, trials, reps):
         result = run_matrix_tests(mat, k, reps)
         results.append(result)
     results.sort()
-    print results
+    #print results
     return results
 
 def find_n(k, N, trials, reps, epsilon, min_good, max_good):
@@ -178,6 +182,21 @@ def find_n(k, N, trials, reps, epsilon, min_good, max_good):
             break
 
 
+def haar_decomp(img_file_name):
+    img = Image.open(img_file_name).convert('L')
+    x,y = img.size
+    coeffs = pywt.wavedec2(img, 'haar', level=pywt.dwt_max_level(max(x,y), pywt.Wavelet('haar')))
+    params = coeffs[0]
+    final_arr = []
+    for i in xrange(1,len(coeffs)):
+	for j in coeffs[i]:
+		final_arr = np.concatenate((final_arr, np.ndarray.flatten(j)))
+    return params, final_arr
+
+def harr_recomp(params, final_arr):
+    return 0
+    
+
 if __name__ == "__main__":
     """
     N = 1000
@@ -189,6 +208,8 @@ if __name__ == "__main__":
             #unif_error.append( (k,n,N,test_matrix(random_bernoulli(n, N), int(k)) ) )
     print unif_error
     """
-    #gradient_descent(random_bernoulli(25,100), 2)
+    gradient_descent(random_bernoulli(25,100), 2)
     find_n(2, 100, 10, 20000, .5, 5, 8)
     #run_test_suite(25, 100, 2, 10, 50000)
+    #haar_decomp("natural.jpg")
+
