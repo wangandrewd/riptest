@@ -114,8 +114,15 @@ def haar_decomp(img_file_name):
     img = Image.open(img_file_name).convert('L')
     x,y = img.size
     coeffs = pywt.wavedec2(img, 'haar', level=pywt.dwt_max_level(max(x,y), pywt.Wavelet('haar')))
-    for i in coeffs:
-        print i
+    params = coeffs[0]
+    final_arr = []
+    for i in xrange(1,len(coeffs)):
+	for j in coeffs[i]:
+		final_arr = np.concatenate((final_arr, np.ndarray.flatten(j)))
+    return params, final_arr
+
+def harr_recomp(params, final_arr):
+    return 0
     
 
 if __name__ == "__main__":

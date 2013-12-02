@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def eval(a, j, q):
+def evaluate(a, j, q):
     return sum((a[i] * (j ** i)) % q for i in range(len(a))) % q
 
 def reed_solomon_code(q,d):
@@ -9,7 +9,7 @@ def reed_solomon_code(q,d):
     a = [0] * (d + 1)
     for i in range(q ** (d + 1)):
         for j in range(q):
-            val = eval(a, j, q)
+            val = evaluate(a, j, q)
             mat[j * q + val,i] = 1 / np.sqrt(q)
 
         curr_ind = 0
