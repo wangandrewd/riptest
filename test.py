@@ -92,7 +92,7 @@ def gradient_descent(mat, k):
     curr_error = np.linalg.norm(mat * vec )/np.linalg.norm(vec)
     prev_error = 1
     go_pos = curr_error > 1
-    print curr_error
+    #print curr_error
     while (go_pos and curr_error - prev_error > thresh) or (not go_pos and prev_error - curr_error > thresh) and MAX_TRIAL > 0:
         gradient = np.matrix(np.zeros(n)).T
         #find the gradient
@@ -113,19 +113,19 @@ def gradient_descent(mat, k):
         MAX_TRIAL -= 1
         prev_error = curr_error
         curr_error = np.linalg.norm(mat * vec )/np.linalg.norm(vec)
-        print curr_error, prev_error
+        #print curr_error, prev_error
 
     return (prev_vec, curr_error)
 
 def run_matrix_tests(mat, k, reps):
     error = test_matrix(mat, k, reps)
-    return error
+    #return error
 
     #errors = []
-    #errors_b = []
-    #for i in xrange(trials):
-    #    _, error = gradient_descent(mat, k)
-    #    errors.append(error)
+    errors_b = []
+    for i in xrange(reps/100):
+        _, error = gradient_descent(mat, k)
+        errors_b.append(error)
      
     #print error
     #errors.sort()
@@ -133,6 +133,7 @@ def run_matrix_tests(mat, k, reps):
     #print errors
     #print errors_b
     #print max(errors_b)
+    return max(error, max(errors_b))
 
 def run_test_suite(n, N, k, trials, reps):
     results = []
@@ -149,17 +150,17 @@ def find_n(k, N, trials, reps, epsilon, min_good, max_good):
     guesses = []
     guess_n = int(1 / (epsilon ** 2) * k * math.log(N / (1.0 * k)))
     increasing = 0
-    round = 1
+    round_fac = 1
     lower_bound = -1
     upper_bound = -1
     while True:
         if lower_bound > 0 and guess_n <= lower_bound:
-            round *= 2
-            guess_n = int(1.5 ** (1.0 / round) * guess_n)
+            round_fac *= 2
+            guess_n = int(1.5 ** (1.0 / round_fac) * guess_n)
             continue
         if upper_bound > 0 and guess_n >= upper_bound:
-            round *= 2
-            guess_n = int(guess_n / (1.5 ** (1.0 / round)))
+            round_fac *= 2
+            guess_n = int(guess_n / (1.5 ** (1.0 / round_fac)))
             continue
 
         guesses.append(guess_n)
@@ -168,15 +169,15 @@ def find_n(k, N, trials, reps, epsilon, min_good, max_good):
         print results
         if results[min_good - 1] > epsilon:
             if increasing == -1:
-                round *= 2
+                round_fac *= 2
             lower_bound = guess_n
-            guess_n = int(1.5 ** (1.0 / round) * guess_n)
+            guess_n = int(1.5 ** (1.0 / round_fac) * guess_n)
             increasing = 1
         elif results[max_good - 1] < epsilon:
             if increasing == 1:
-                round *= 2
+                round_fac *= 2
             upper_bound = guess_n
-            guess_n = int(guess_n / (1.5 ** (1.0 / round)))
+            guess_n = int(guess_n / (1.5 ** (1.0 / round_fac)))
             increasing = -1
         else:
             break
@@ -193,23 +194,19 @@ def haar_decomp(img_file_name):
 		final_arr = np.concatenate((final_arr, np.ndarray.flatten(j)))
     return params, final_arr
 
+def reverse_flatten(arr_format, values, index):
+    
+    return 0 
+
 def harr_recomp(params, final_arr):
     return 0
     
 
 if __name__ == "__main__":
-    """
-    N = 1000
-    ks = np.linspace(N/10, N/2, 10)
-    unif_error = []
-    for k in ks:
-        for n in xrange(int(k), N, int((N-k)/10)):
-            print (k,n,N)
-            #unif_error.append( (k,n,N,test_matrix(random_bernoulli(n, N), int(k)) ) )
-    print unif_error
-    """
-    gradient_descent(random_bernoulli(25,100), 2)
-    find_n(2, 100, 10, 20000, .5, 5, 8)
-    #run_test_suite(25, 100, 2, 10, 50000)
-    #haar_decomp("natural.jpg")
+    N = 100
+    epsilon_low = 0.1
+    epsilon_high = 0.5
+    for k in np.linspace(N/(10**(10*epsilon_low**2)), N/(10**(10*epsilon_high**2))):
+        k = int(k)
+        find_n(k, 100, 10, 20000, .5, 5, 8)
 
