@@ -2,6 +2,7 @@ import numpy as np
 import random
 from scipy.linalg import hadamard
 from matplotlib import pyplot as plt
+import math
 
 # k = O(delta n/log(2N/n) )
 # 
@@ -58,10 +59,11 @@ def generate_unif_vec(k,N):
         vec[locs[i]][0] = rand[i]
     return vec
 
-def test_matrix(mat, k):
+def test_matrix(mat, k, reps):
     m,n = mat.shape
-    print k
-    num_unif_trials = 100*k
+    #print k
+    num_unif_trials = reps
+    #num_unif_trials = 100*k
 
     # Generate random vectors of length n that are k sparse uniform random values
     errors = []
@@ -69,10 +71,13 @@ def test_matrix(mat, k):
         vec = generate_unif_vec(k, n)
         error =  abs(1 - np.linalg.norm(mat * vec, ord='fro')**2 / np.linalg.norm(vec, ord='fro')**2)
         errors.append(error)
+    errors.sort()
+    #print errors
     return max(errors)
 
 def gradient_descent(mat, k):
     MAX_TRIAL = 10000
+    thresh = .000005
     m,n = mat.shape
     alpha = 0.3
     # pick k random coordinates and random numbs
@@ -86,7 +91,7 @@ def gradient_descent(mat, k):
     prev_error = 1
     go_pos = curr_error > 1
     print curr_error
-    while (go_pos and curr_error - prev_error > 0) or (not go_pos and prev_error - curr_error > 0) and MAX_TRIAL > 0:
+    while (go_pos and curr_error - prev_error > thresh) or (not go_pos and prev_error - curr_error > thresh) and MAX_TRIAL > 0:
         gradient = np.matrix(np.zeros(n)).T
         #find the gradient
         for index in xrange(k):
@@ -106,7 +111,72 @@ def gradient_descent(mat, k):
         curr_error = np.linalg.norm(mat * vec )/np.linalg.norm(vec)
         print curr_error, prev_error
 
-    return prev_vec
+    return (prev_vec, curr_error)
+
+def run_matrix_tests(mat, k, reps):
+    error = test_matrix(mat, k, reps)
+    return error
+
+    #errors = []
+    #errors_b = []
+    #for i in xrange(trials):
+    #    _, error = gradient_descent(mat, k)
+    #    errors.append(error)
+     
+    #print error
+    #errors.sort()
+    #errors_b.sort()
+    #print errors
+    #print errors_b
+    #print max(errors_b)
+
+def run_test_suite(n, N, k, trials, reps):
+    results = []
+    for i in xrange(trials):
+        print i
+        mat = random_bernoulli(n, N)
+        result = run_matrix_tests(mat, k, reps)
+        results.append(result)
+    results.sort()
+    print results
+    return results
+
+def find_n(k, N, trials, reps, epsilon, min_good, max_good):
+    guesses = []
+    guess_n = int(1 / (epsilon ** 2) * k * math.log(N / (1.0 * k)))
+    increasing = 0
+    round = 1
+    lower_bound = -1
+    upper_bound = -1
+    while True:
+        if lower_bound > 0 and guess_n <= lower_bound:
+            round *= 2
+            guess_n = int(1.5 ** (1.0 / round) * guess_n)
+            continue
+        if upper_bound > 0 and guess_n >= upper_bound:
+            round *= 2
+            guess_n = int(guess_n / (1.5 ** (1.0 / round)))
+            continue
+
+        guesses.append(guess_n)
+        results = run_test_suite(guess_n, N, k, trials, reps)
+        print guess_n
+        print results
+        if results[min_good - 1] > epsilon:
+            if increasing == -1:
+                round *= 2
+            lower_bound = guess_n
+            guess_n = int(1.5 ** (1.0 / round) * guess_n)
+            increasing = 1
+        elif results[max_good - 1] < epsilon:
+            if increasing == 1:
+                round *= 2
+            upper_bound = guess_n
+            guess_n = int(guess_n / (1.5 ** (1.0 / round)))
+            increasing = -1
+        else:
+            break
+
 
 if __name__ == "__main__":
     """
@@ -119,4 +189,6 @@ if __name__ == "__main__":
             #unif_error.append( (k,n,N,test_matrix(random_bernoulli(n, N), int(k)) ) )
     print unif_error
     """
-    gradient_descent(random_bernoulli(25,100), 2)
+    #gradient_descent(random_bernoulli(25,100), 2)
+    find_n(2, 100, 10, 20000, .5, 5, 8)
+    #run_test_suite(25, 100, 2, 10, 50000)
