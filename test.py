@@ -149,17 +149,17 @@ def find_n(k, N, trials, reps, epsilon, min_good, max_good):
     guesses = []
     guess_n = int(1 / (epsilon ** 2) * k * math.log(N / (1.0 * k)))
     increasing = 0
-    round = 1
+    round_fac = 1
     lower_bound = -1
     upper_bound = -1
     while True:
         if lower_bound > 0 and guess_n <= lower_bound:
-            round *= 2
-            guess_n = int(1.5 ** (1.0 / round) * guess_n)
+            round_fac *= 2
+            guess_n = int(1.5 ** (1.0 / round_fac) * guess_n)
             continue
         if upper_bound > 0 and guess_n >= upper_bound:
-            round *= 2
-            guess_n = int(guess_n / (1.5 ** (1.0 / round)))
+            round_fac *= 2
+            guess_n = int(guess_n / (1.5 ** (1.0 / round_fac)))
             continue
 
         guesses.append(guess_n)
@@ -168,15 +168,15 @@ def find_n(k, N, trials, reps, epsilon, min_good, max_good):
         print results
         if results[min_good - 1] > epsilon:
             if increasing == -1:
-                round *= 2
+                round_fac *= 2
             lower_bound = guess_n
-            guess_n = int(1.5 ** (1.0 / round) * guess_n)
+            guess_n = int(1.5 ** (1.0 / round_fac) * guess_n)
             increasing = 1
         elif results[max_good - 1] < epsilon:
             if increasing == 1:
                 round *= 2
             upper_bound = guess_n
-            guess_n = int(guess_n / (1.5 ** (1.0 / round)))
+            guess_n = int(guess_n / (1.5 ** (1.0 / round_fac)))
             increasing = -1
         else:
             break
@@ -208,7 +208,7 @@ if __name__ == "__main__":
             #unif_error.append( (k,n,N,test_matrix(random_bernoulli(n, N), int(k)) ) )
     print unif_error
     """
-    gradient_descent(random_bernoulli(25,100), 2)
+    #gradient_descent(random_bernoulli(25,100), 2)
     find_n(2, 100, 10, 20000, .5, 5, 8)
     #run_test_suite(25, 100, 2, 10, 50000)
     #haar_decomp("natural.jpg")
