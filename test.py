@@ -6,13 +6,14 @@ from matplotlib import pyplot as plt
 #Consts
 SCALE = 2000
 
+
+# k = O(delta n/log(2N/n) )
+# 
 def random_bernoulli(n,N):
     return (2*np.random.randint(2, size=(n,N))-1)/np.sqrt(n)
  
 def random_gaussian(n,N):
-    gauss_mat = np.random.normal(size=(n,N))
-    for i in xrange(N):
-        gauss_mat[:,i] = gauss_mat[:,i]/np.linalg.norm(gauss_mat[:,i])
+    gauss_mat = np.random.normal(loc=0,scale=1.0/np.sqrt(n),size=(n,N))
     return gauss_mat
 
 def fjlt_derive(n,N):
@@ -50,26 +51,76 @@ def error_info(errors):
     print "Max Error", max(errors)
     print "Min Error", min(errors)
     print "Error Std", np.std(errors)
-    plt.hist(errors, bins = len(set(errors)))
-    plt.show()
-    
+    #plt.hist(errors, bins = len(set(errors)))
+    #plt.show()
+
+def generate_unif_vec(k,N):
+    rand = 2*np.random.random(k) -1
+    locs = random.sample(xrange(N), k)
+    vec = np.matrix(np.zeros(N)).T
+    for i in xrange(k):
+        vec[locs[i]][0] = rand[i]
+    return vec
+
 def test_matrix(mat, k):
     m,n = mat.shape
-    num_unif_trials = 10
-    print "Coherence", coherence(mat)
-    
+    print k
+    num_unif_trials = 100*k
+
     # Generate random vectors of length n that are k sparse uniform random values
     errors = []
     for i in xrange(num_unif_trials):
-        rand = SCALE * np.random.random(k) - (SCALE/2)
-        locs = random.sample(xrange(n), k)
-        vec = np.matrix(np.zeros(n)).T
-        for i in xrange(k):
-            vec[locs[i]][0] = rand[i]
-        # Test
+        vec = generate_unif_vec(k, n)
         error =  abs(1 - np.linalg.norm(mat * vec, ord='fro')**2 / np.linalg.norm(vec, ord='fro')**2)
         errors.append(error)
-    error_info(errors)
+    return max(errors)
+
+def gradient_descent(mat, k):
+    MAX_TRIAL = 10000
+    m,n = mat.shape
+    alpha = 0.3
+    # pick k random coordinates and random numbs
+    rand = 2*np.random.random(k) -1
+    locs = random.sample(xrange(n), k)
+    vec = np.matrix(np.zeros(n)).T
+    for i in xrange(k):
+        vec[locs[i]][0] = rand[i]
+    prev_vec = np.copy(vec)
+    curr_error = np.linalg.norm(mat * vec )/np.linalg.norm(vec)
+    prev_error = 1
+    go_pos = curr_error > 1
+    print curr_error
+    while (go_pos and curr_error - prev_error > 0) or (not go_pos and prev_error - curr_error > 0) and MAX_TRIAL > 0:
+        gradient = np.matrix(np.zeros(n)).T
+        #find the gradient
+        for index in xrange(k):
+            deriv = 0
+            for i in xrange(m):
+                for j in xrange(n):
+                    deriv += 2*mat[i][locs[index]]*mat[i][j]*vec[j]
+            gradient[locs[index]][0] = deriv - 2 * vec[locs[index]]
+        #move in direction of gradient
+        prev_vec = np.copy(vec)
+        if go_pos:
+             vec = vec + alpha * gradient
+        else:
+            vec = vec - alpha*gradient
+        MAX_TRIAL -= 1
+        prev_error = curr_error
+        curr_error = np.linalg.norm(mat * vec )/np.linalg.norm(vec)
+        print curr_error, prev_error
+
+    return prev_vec
 
 if __name__ == "__main__":
-    print coherence(np.eye(10))
+    """
+    N = 1000
+    ks = np.linspace(N/10, N/2, 10)
+    unif_error = []
+    for k in ks:
+        for n in xrange(int(k), N, int((N-k)/10)):
+            print (k,n,N)
+            #unif_error.append( (k,n,N,test_matrix(random_bernoulli(n, N), int(k)) ) )
+    print unif_error
+    """
+    gradient_descent(random_bernoulli(25,100), 2)
