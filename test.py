@@ -1,5 +1,7 @@
 import numpy as np
 import random
+import Image
+import pywt
 from scipy.linalg import hadamard
 from matplotlib import pyplot as plt
 
@@ -108,6 +110,14 @@ def gradient_descent(mat, k):
 
     return prev_vec
 
+def haar_decomp(img_file_name):
+    img = Image.open(img_file_name).convert('L')
+    x,y = img.size
+    coeffs = pywt.wavedec2(img, 'haar', level=pywt.dwt_max_level(max(x,y), pywt.Wavelet('haar')))
+    for i in coeffs:
+        print i
+    
+
 if __name__ == "__main__":
     """
     N = 1000
@@ -119,4 +129,5 @@ if __name__ == "__main__":
             #unif_error.append( (k,n,N,test_matrix(random_bernoulli(n, N), int(k)) ) )
     print unif_error
     """
-    gradient_descent(random_bernoulli(25,100), 2)
+    #gradient_descent(random_bernoulli(25,100), 2)
+    haar_decomp("natural.jpg")
