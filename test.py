@@ -174,7 +174,7 @@ def find_n(k, N, trials, reps, epsilon, min_good, max_good):
             increasing = 1
         elif results[max_good - 1] < epsilon:
             if increasing == 1:
-                round *= 2
+                round_fac *= 2
             upper_bound = guess_n
             guess_n = int(guess_n / (1.5 ** (1.0 / round_fac)))
             increasing = -1
