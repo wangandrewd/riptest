@@ -92,10 +92,13 @@ def gradient_descent(mat, k):
         gradient = np.matrix(np.zeros(n)).T
         #find the gradient
         for index in xrange(k):
-            deriv = 0
+            gprimex = 0
             for i in xrange(m):
-                deriv += 2*mat[i][locs[index]]*np.dot(np.array(mat[i]),np.array(vec))
-            gradient[locs[index]][0] = deriv - 2 * vec[locs[index]]
+                gprimex += 2*mat[i][locs[index]]*np.dot(np.array(mat[i]),np.array(vec))
+            hprimex = 2*vec[locs[index]]
+            gx = np.linalg.norm(mat*vec)**2
+            hx = np.linalg.norm(vec)**2
+            gradient[locs[index]][0] = (gprimex*hx - hprimex*gx)/(hx*hx)
         #move in direction of gradient
         prev_vec = np.copy(vec)
         if go_pos:
