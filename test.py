@@ -14,6 +14,8 @@ def random_bernoulli(n,N):
  
 def random_gaussian(n,N):
     gauss_mat = np.random.normal(loc=0,scale=1.0/np.sqrt(n),size=(n,N))
+    for i in xrange(N):
+        gauss_mat[:,i] = gauss_mat[:,i]/np.linalg.norm(gauss_mat[:,i])
     return gauss_mat
 
 def fjlt_derive(n,N):
@@ -119,23 +121,24 @@ def gradient_descent(mat, k):
     return (prev_vec, curr_error)
 
 def run_matrix_tests(mat, k, reps):
-    error = test_matrix(mat, k, reps)
+    #error = test_matrix(mat, k, reps)
     #return error
 
-    #errors = []
-    #errors_b = []
-    #for i in xrange(reps/100):
-    #    _, error = gradient_descent(mat, k)
-    #    errors_b.append(error)
+    errors = []
+    errors_b = []
+    for i in xrange(reps/100):
+        _, error = gradient_descent(mat, k)
+        print "descent"
+        errors_b.append(error)
      
-    #print error
-    #errors.sort()
-    #errors_b.sort()
-    #print errors
-    #print errors_b
-    #print max(errors_b)
-    return error
-    #return max(error, max(errors_b))
+    print error
+    errors.sort()
+    errors_b.sort()
+    print errors
+    print errors_b
+    print max(errors_b)
+    #return error
+    return max(error, max(errors_b))
 
 def run_test_suite(n, N, k, trials, reps, mat_gen):
     results = []
@@ -238,9 +241,11 @@ def write_csv(file_name, result_dict):
     f.close()
 
 if __name__ == "__main__":
-    result_dict = dict(bern=dict(), gauss=dict())
-    Ns = [1000]#, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 15000, 20000]
-    epsilons = [0.1] #, 0.25, 0.5]
+    #find_n(2,1024, 10, 20000, 0.2, 0.5, 0.85, fjlt_derive)
+    
+    result_dict = dict(bern=dict(), gauss=dict(), fjlt=dict())
+    Ns = [1024, 2048, 4096, 8192, 16384]
+    epsilons = [0.25, 0.5]
     for N in Ns:
         for epsilon in epsilons:
             values_of_k = 5
@@ -258,12 +263,13 @@ if __name__ == "__main__":
                 print k
                 print "Bernoulli"
 
-                result_dict['bern'][(N,k,epsilon)] =   find_n(k, 100, 10, 20000, epsilon, .5, .8, random_bernoulli)
+                result_dict['bern'][(N,k,epsilon)] =   find_n(k, N, 100, 20000, epsilon, .5, .75, random_bernoulli)
                 print "Gaussian"
-                result_dict['gauss'][(N,k,epsilon)] = find_n(k, 100, 10, 20000, epsilon, .5, .8, random_gaussian)
+                result_dict['gauss'][(N,k,epsilon)] = find_n(k, N, 100, 20000, epsilon, .5, .75, random_gaussian)
                 #print "FJLT"
-                #find_n(k, 100, 10, 20000, epsilon, .5, .8, fjlt_derive)
+                result_dict['fjlt'][(N,k,epsilon)] = find_n(k, N, 100, 20000, epsilon, .5, .75, fjlt_derive)
                 #find_n(k, 100, 10, 20000, epsilon, 5, 8)
     write_csv("THUNDERBEAR.txt", result_dict)
+
 
 
