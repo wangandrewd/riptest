@@ -242,7 +242,7 @@ if __name__ == "__main__":
     epsilon_high = 0.5
     values_of_k = 5
     value_of_k = 2
-    while 1 / epsilon_high ** 2 * value_of_k * math.log(N * 1.0 / value_of_k) < N / 2:
+    while 1 / epsilon_high ** 2 * value_of_k * math.log(N * 1.0 / value_of_k) < N:
         value_of_k  = int(value_of_k * 1.5)
     value_of_k = int(value_of_k / 1.5)
     k_set = [int((value_of_k / 2) ** (i / (1.0 * values_of_k)) * 2) for i in range(values_of_k)]
