@@ -62,35 +62,30 @@ def generate_unif_vec(k,N):
     vec = np.matrix(np.zeros(N)).T
     for i in xrange(k):
         vec[locs[i]][0] = rand[i]
-    return vec
+    return vec, locs
 
 def test_matrix(mat, k, reps):
     m,n = mat.shape
-    #print k
     num_unif_trials = reps
-    #num_unif_trials = 100*k
 
     # Generate random vectors of length n that are k sparse uniform random values
-    errors = []
+    biggest_error = -1
+    worst_error_vec = None
+    worst_locs = None
     for i in xrange(num_unif_trials):
-        vec = generate_unif_vec(k, n)
+        vec, locs = generate_unif_vec(k, n)
         error =  abs(1 - np.linalg.norm(mat * vec, ord='fro')**2 / np.linalg.norm(vec, ord='fro')**2)
-        errors.append(error)
-    errors.sort()
-    #print errors
-    return max(errors)
+        if biggest_error < error:
+            biggest_error = error
+            worst_error_vec = vec
+            worst_locs = locs
+    return biggest_error, worst_error_vec, worst_locs
 
-def gradient_descent(mat, k):
-    MAX_TRIAL = 10000
+def gradient_descent(mat, k, vec, locs):
+    MAX_TRIAL = 1000
     thresh = .000005
     m,n = mat.shape
     alpha = 0.3
-    # pick k random coordinates and random numbs
-    rand = 2*np.random.random(k) -1
-    locs = random.sample(xrange(n), k)
-    vec = np.matrix(np.zeros(n)).T
-    for i in xrange(k):
-        vec[locs[i]][0] = rand[i]
     prev_vec = np.copy(vec)
     curr_error = np.linalg.norm(mat * vec )/np.linalg.norm(vec)
     prev_error = 1
@@ -121,24 +116,10 @@ def gradient_descent(mat, k):
     return (prev_vec, curr_error)
 
 def run_matrix_tests(mat, k, reps):
-    #error = test_matrix(mat, k, reps)
+    error, worst_error_vec, worst_locs = test_matrix(mat, k, reps)
     #return error
-
-    errors = []
-    errors_b = []
-    for i in xrange(reps/100):
-        _, error = gradient_descent(mat, k)
-        print "descent"
-        errors_b.append(error)
-     
-    print error
-    errors.sort()
-    errors_b.sort()
-    print errors
-    print errors_b
-    print max(errors_b)
-    #return error
-    return max(error, max(errors_b))
+    vec, grad_error = gradient_descent(mat, k, worst_error_vec, worst_locs)
+    return max(error, grad_error)
 
 def run_test_suite(n, N, k, trials, reps, mat_gen):
     results = []
@@ -148,7 +129,6 @@ def run_test_suite(n, N, k, trials, reps, mat_gen):
         result = run_matrix_tests(mat, k, reps)
         results.append(result)
     results.sort()
-    #print results
     return results
 
 def find_n(k, N, trials, reps, epsilon, min_good, max_good, mat_gen):
@@ -263,11 +243,11 @@ if __name__ == "__main__":
                 print k
                 print "Bernoulli"
 
-                result_dict['bern'][(N,k,epsilon)] =   find_n(k, N, 100, 20000, epsilon, .5, .75, random_bernoulli)
+                result_dict['bern'][(N,k,epsilon)] =   find_n(k, N, 30, 10000, epsilon, .5, .75, random_bernoulli)
                 print "Gaussian"
-                result_dict['gauss'][(N,k,epsilon)] = find_n(k, N, 100, 20000, epsilon, .5, .75, random_gaussian)
+                result_dict['gauss'][(N,k,epsilon)] = find_n(k, N, 30, 10000, epsilon, .5, .75, random_gaussian)
                 #print "FJLT"
-                result_dict['fjlt'][(N,k,epsilon)] = find_n(k, N, 100, 20000, epsilon, .5, .75, fjlt_derive)
+                result_dict['fjlt'][(N,k,epsilon)] = find_n(k, N, 30, 10000, epsilon, .5, .75, fjlt_derive)
                 #find_n(k, 100, 10, 20000, epsilon, 5, 8)
     write_csv("THUNDERBEAR.txt", result_dict)
 
