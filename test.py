@@ -1,7 +1,7 @@
 import numpy as np
 import random
 import Image
-import pywt
+#import pywt
 from scipy.linalg import hadamard
 from matplotlib import pyplot as plt
 import matplotlib.cm as cm
@@ -242,10 +242,13 @@ if __name__ == "__main__":
     epsilon_high = 0.5
     values_of_k = 5
     value_of_k = 2
+    epsilon_high = 0.1
     while 1 / epsilon_high ** 2 * value_of_k * math.log(N * 1.0 / value_of_k) < N:
         value_of_k  = int(value_of_k * 1.5)
-    value_of_k = int(value_of_k / 1.5)
+    print value_of_k
+    value_of_k = max(2, int(value_of_k / 1.5))
     k_set = [int((value_of_k / 2) ** (i / (1.0 * values_of_k)) * 2) for i in range(values_of_k)]
+    print k_set
     k_set = list(set(k_set))
     k_set.sort()
     print k_set
