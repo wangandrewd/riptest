@@ -1,9 +1,10 @@
 import numpy as np
 import random
 import Image
-#import pywt
+import pywt
 from scipy.linalg import hadamard
 from matplotlib import pyplot as plt
+import matplotlib.cm as cm
 import math
 
 # k = O(delta n/log(2N/n) )
@@ -197,15 +198,43 @@ def haar_decomp(img_file_name):
     for i in xrange(1,len(coeffs)):
 	for j in coeffs[i]:
 		final_arr = np.concatenate((final_arr, np.ndarray.flatten(j)))
-    return params, final_arr
+    return params, coeffs[1:], final_arr
 
 def reverse_flatten(arr_format, values, index):
-    
-    return 0 
+    if not hasattr(arr_format, '__iter__'):
+        return index
 
-def harr_recomp(params, final_arr):
-    return 0
-    
+    for i in xrange(len(arr_format)):
+        if hasattr(arr_format[i], '__iter__'):
+            index = reverse_flatten(arr_format[i], values, index)
+        else:
+            arr_format[i] = values[index]
+            index += 1
+
+    return index
+
+def haar_recomp(params, rest_coeff, final_arr):
+    reverse_flatten(rest_coeff, final_arr, 0)
+    final_tuple = [ params]
+    for i in rest_coeff:
+        final_tuple.append(i)
+    final_tuple = tuple(final_tuple)
+    return pywt.waverec2(final_tuple, 'haar')
+
+
+#format of result_dict
+#result_dict -> matrix type -> N,k,epsilon -> n
+def write_csv(file_name, result_dict):
+    f = open(file_name, 'w')
+    print_str = "%d, %d, %f,"
+    for matrix_type in result_dict.keys():
+        f.write(matrix_type)
+        f.write("\n")
+        for nkepsilon in matrix_type[matrix_type].keys():
+            f.write( print_str % nkepsilon )
+            f.write( str(matrix_type[matrix_type][nkepsilon]))
+            f.write("\n")
+    f.close()
 
 if __name__ == "__main__":
     N = 1000
@@ -230,4 +259,10 @@ if __name__ == "__main__":
         find_n(k, 100, 10, 20000, .5, .5, .8, random_gaussian)
         #print "FJLT"
         #find_n(k, 100, 10, 20000, .5, .5, .8, fjlt_derive)
+        find_n(k, 100, 10, 20000, .5, 5, 8)
+    """
+    a,b,c = haar_decomp("natural.jpg")
+    plt.imshow(haar_recomp(a, b, c), cmap= cm.Greys_r)
+    plt.show()
+    """
 
