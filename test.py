@@ -142,9 +142,9 @@ def gradient_descent(mat, k, vec, locs):
     m,n = mat.shape
     alpha = 0.3
     prev_vec = np.copy(vec)
-    curr_error = np.linalg.norm(mat * vec )/np.linalg.norm(vec)
+    curr_error = np.linalg.norm(mat * vec )/np.linalg.norm(vec)-1
     prev_error = 1
-    go_pos = curr_error > 1
+    go_pos = curr_error > 0
     #print curr_error
     while (go_pos and curr_error - prev_error > thresh) or (not go_pos and prev_error - curr_error > thresh) and MAX_TRIAL > 0:
         gradient = np.matrix(np.zeros(n)).T
@@ -165,7 +165,7 @@ def gradient_descent(mat, k, vec, locs):
             vec = vec - alpha*gradient
         MAX_TRIAL -= 1
         prev_error = curr_error
-        curr_error = np.linalg.norm(mat * vec )/np.linalg.norm(vec)
+        curr_error = np.linalg.norm(mat * vec )/np.linalg.norm(vec)-1
         #print curr_error, prev_error
 
     return (prev_vec, curr_error)
@@ -179,7 +179,6 @@ def run_matrix_tests(mat, k, reps):
 def run_test_suite(n, N, k, trials, reps, mat_gen):
     results = []
     for i in xrange(trials):
-        #print i
         mat = mat_gen(n, N)
         result = run_matrix_tests(mat, k, reps)
         results.append(result)
@@ -234,8 +233,8 @@ def haar_decomp(img_file_name):
     params = coeffs[0]
     final_arr = []
     for i in xrange(1,len(coeffs)):
-	for j in coeffs[i]:
-		final_arr = np.concatenate((final_arr, np.ndarray.flatten(j)))
+	    for j in coeffs[i]:
+		    final_arr = np.concatenate((final_arr, np.ndarray.flatten(j)))
     return params, coeffs[1:], final_arr
 
 def reverse_flatten(arr_format, values, index):
@@ -276,11 +275,10 @@ def write_csv(file_name, result_dict):
     f.close()
 
 if __name__ == "__main__":
-    #find_n(2,1024, 10, 20000, 0.2, 0.5, 0.85, fjlt_derive)
     
     result_dict = dict(bern=dict(), gauss=dict(), fjlt=dict())
     Ns = [1024, 2048, 4096, 8192, 16384]
-    epsilons = [0.25, 0.5]
+    epsilons = [0.5]
     for N in Ns:
         for epsilon in epsilons:
             values_of_k = 5
