@@ -215,8 +215,21 @@ def haar_recomp(params, rest_coeff, final_arr):
         final_tuple.append(i)
     final_tuple = tuple(final_tuple)
     return pywt.waverec2(final_tuple, 'haar')
-    
-    
+
+
+#format of result_dict
+#result_dict -> matrix type -> N,k,epsilon -> n
+def write_csv(file_name, result_dict):
+    f = open(file_name, 'w')
+    print_str = "%d, %d, %f,"
+    for matrix_type in result_dict.keys():
+        f.write(matrix_type)
+        f.write("\n")
+        for nkepsilon in matrix_type[matrix_type].keys():
+            f.write( print_str % nkepsilon )
+            f.write( str(matrix_type[matrix_type][nkepsilon]))
+            f.write("\n")
+    f.close()
 
 if __name__ == "__main__":
     """
