@@ -23,4 +23,4 @@ def reed_solomon_code(q,d):
                 a[curr_ind] = 0
     print mat
 
-reed_solomon_code(3, 2)
+reed_solomon_code(3, 1)
