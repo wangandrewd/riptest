@@ -225,9 +225,10 @@ def write_csv(file_name, result_dict):
     for matrix_type in result_dict.keys():
         f.write(matrix_type)
         f.write("\n")
-        for nkepsilon in matrix_type[matrix_type].keys():
+        for nkepsilon in result_dict[matrix_type].keys():
+            print nkepsilon
             f.write( print_str % nkepsilon )
-            f.write( str(matrix_type[matrix_type][nkepsilon]))
+            f.write( str(result_dict[matrix_type][nkepsilon]))
             f.write("\n")
     f.close()
 
@@ -240,7 +241,8 @@ if __name__ == "__main__":
         k = int(k)
         find_n(k, 100, 10, 20000, .5, 5, 8)
     """
-    a,b,c = haar_decomp("natural.jpg")
-    plt.imshow(haar_recomp(a, b, c), cmap= cm.Greys_r)
-    plt.show()
-
+    #a,b,c = haar_decomp("natural.jpg")
+    #plt.imshow(haar_recomp(a, b, c), cmap= cm.Greys_r)
+    #plt.show()
+    key = (3,4,0.5)
+    write_csv("hi.txt", dict(axs={key: 3}))
