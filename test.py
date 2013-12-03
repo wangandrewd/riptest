@@ -1,7 +1,7 @@
 import numpy as np
 import random
 import Image
-#import pywt
+import pywt
 from scipy.linalg import hadamard
 from matplotlib import pyplot as plt
 import matplotlib.cm as cm
@@ -186,7 +186,7 @@ def find_n(k, N, trials, reps, epsilon, min_good, max_good, mat_gen):
             guess_n = int(guess_n / (1.5 ** (1.0 / round_fac)))
             increasing = -1
         else:
-            break
+            return guess_n
 
 
 def haar_decomp(img_file_name):
@@ -230,42 +230,40 @@ def write_csv(file_name, result_dict):
     for matrix_type in result_dict.keys():
         f.write(matrix_type)
         f.write("\n")
-        for nkepsilon in matrix_type[matrix_type].keys():
+        for nkepsilon in result_dict[matrix_type].keys():
+            print nkepsilon
             f.write( print_str % nkepsilon )
-            f.write( str(matrix_type[matrix_type][nkepsilon]))
+            f.write( str(result_dict[matrix_type][nkepsilon]))
             f.write("\n")
     f.close()
 
 if __name__ == "__main__":
-    N = 1000
-    epsilon_low = 0.1
-    epsilon_high = 0.5
-    values_of_k = 5
-    value_of_k = 2
-    epsilon_high = 0.1
-    while 1 / epsilon_high ** 2 * value_of_k * math.log(N * 1.0 / value_of_k) < N:
-        value_of_k  = int(value_of_k * 1.5)
-    print value_of_k
-    value_of_k = max(2, int(value_of_k / 1.5))
-    k_set = [int((value_of_k / 2) ** (i / (1.0 * values_of_k)) * 2) for i in range(values_of_k)]
-    print k_set
-    k_set = list(set(k_set))
-    k_set.sort()
-    print k_set
-    for k in k_set:
-        k = int(k)
-        print "K"
-        print k
-        print "Bernoulli"
-        find_n(k, 100, 10, 20000, .5, .5, .8, random_bernoulli)
-        print "Gaussian"
-        find_n(k, 100, 10, 20000, .5, .5, .8, random_gaussian)
-        #print "FJLT"
-        #find_n(k, 100, 10, 20000, .5, .5, .8, fjlt_derive)
-        find_n(k, 100, 10, 20000, .5, 5, 8)
-    """
-    a,b,c = haar_decomp("natural.jpg")
-    plt.imshow(haar_recomp(a, b, c), cmap= cm.Greys_r)
-    plt.show()
-    """
+    result_dict = dict(bern=dict(), gauss=dict())
+    Ns = [1000]#, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 15000, 20000]
+    epsilons = [0.1] #, 0.25, 0.5]
+    for N in Ns:
+        for epsilon in epsilons:
+            values_of_k = 5
+            value_of_k = 2
+            while 1.0/ epsilon ** 2 * value_of_k * math.log(N * 1.0 / value_of_k) < N:
+                value_of_k  = int(value_of_k * 1.5)
+            value_of_k = max(int(value_of_k / 1.5), 2)
+            k_set = [int((value_of_k / 2) ** (i / (1.0 * values_of_k)) * 2) for i in range(values_of_k)]
+            k_set = list(set(k_set))
+            k_set.sort()
+            print k_set
+            for k in k_set:
+                k = int(k)
+                print "K"
+                print k
+                print "Bernoulli"
+
+                result_dict['bern'][(N,k,epsilon)] =   find_n(k, 100, 10, 20000, epsilon, .5, .8, random_bernoulli)
+                print "Gaussian"
+                result_dict['gauss'][(N,k,epsilon)] = find_n(k, 100, 10, 20000, epsilon, .5, .8, random_gaussian)
+                #print "FJLT"
+                #find_n(k, 100, 10, 20000, epsilon, .5, .8, fjlt_derive)
+                #find_n(k, 100, 10, 20000, epsilon, 5, 8)
+    write_csv("THUNDERBEAR.txt", result_dict)
+
 
