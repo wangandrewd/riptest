@@ -16,7 +16,7 @@ def random_gaussian(n,N):
     return gauss_mat
 
 def fjlt_derive(n,N):
-    S = np.zeros(n,N)
+    S = np.zeros((n,N))
     for i in xrange(n):
         S[i,np.random.randint(0,N)] = 1
     S = S * np.sqrt(N)/np.sqrt(n)
@@ -122,10 +122,10 @@ def run_matrix_tests(mat, k, reps):
     #return error
 
     #errors = []
-    errors_b = []
-    for i in xrange(reps/100):
-        _, error = gradient_descent(mat, k)
-        errors_b.append(error)
+    #errors_b = []
+    #for i in xrange(reps/100):
+    #    _, error = gradient_descent(mat, k)
+    #    errors_b.append(error)
      
     #print error
     #errors.sort()
@@ -133,47 +133,52 @@ def run_matrix_tests(mat, k, reps):
     #print errors
     #print errors_b
     #print max(errors_b)
-    return max(error, max(errors_b))
+    return error
+    #return max(error, max(errors_b))
 
-def run_test_suite(n, N, k, trials, reps):
+def run_test_suite(n, N, k, trials, reps, mat_gen):
     results = []
     for i in xrange(trials):
-        print i
-        mat = random_bernoulli(n, N)
+        #print i
+        mat = mat_gen(n, N)
         result = run_matrix_tests(mat, k, reps)
         results.append(result)
     results.sort()
     #print results
     return results
 
-def find_n(k, N, trials, reps, epsilon, min_good, max_good):
+def find_n(k, N, trials, reps, epsilon, min_good, max_good, mat_gen):
     guesses = []
     guess_n = int(1 / (epsilon ** 2) * k * math.log(N / (1.0 * k)))
     increasing = 0
     round_fac = 1
     lower_bound = -1
     upper_bound = -1
+    int_min_good = int(min_good * trials) - 1
+    int_max_good = int(max_good * trials) - 1
+
     while True:
-        if lower_bound > 0 and guess_n <= lower_bound:
-            round_fac *= 2
-            guess_n = int(1.5 ** (1.0 / round_fac) * guess_n)
-            continue
-        if upper_bound > 0 and guess_n >= upper_bound:
-            round_fac *= 2
-            guess_n = int(guess_n / (1.5 ** (1.0 / round_fac)))
-            continue
+        #print round_fac
+        #if lower_bound > 0 and guess_n <= lower_bound:
+        #    round_fac *= 2
+        #    guess_n = int(1.5 ** (1.0 / round_fac) * guess_n)
+        #    continue
+        #if upper_bound > 0 and guess_n >= upper_bound:
+        #    round_fac *= 2
+        #    guess_n = int(guess_n / (1.5 ** (1.0 / round_fac)))
+        #    continue
 
         guesses.append(guess_n)
-        results = run_test_suite(guess_n, N, k, trials, reps)
+        results = run_test_suite(guess_n, N, k, trials, reps, mat_gen)
         print guess_n
         print results
-        if results[min_good - 1] > epsilon:
+        if results[int_min_good] > epsilon:
             if increasing == -1:
                 round_fac *= 2
             lower_bound = guess_n
             guess_n = int(1.5 ** (1.0 / round_fac) * guess_n)
             increasing = 1
-        elif results[max_good - 1] < epsilon:
+        elif results[int_max_good] < epsilon:
             if increasing == 1:
                 round_fac *= 2
             upper_bound = guess_n
@@ -203,10 +208,26 @@ def harr_recomp(params, final_arr):
     
 
 if __name__ == "__main__":
-    N = 100
+    N = 1000
     epsilon_low = 0.1
     epsilon_high = 0.5
-    for k in np.linspace(N/(10**(10*epsilon_low**2)), N/(10**(10*epsilon_high**2))):
+    values_of_k = 5
+    value_of_k = 2
+    while 1 / epsilon_high ** 2 * value_of_k * math.log(N * 1.0 / value_of_k) < N / 2:
+        value_of_k  = int(value_of_k * 1.5)
+    value_of_k = int(value_of_k / 1.5)
+    k_set = [int((value_of_k / 2) ** (i / (1.0 * values_of_k)) * 2) for i in range(values_of_k)]
+    k_set = list(set(k_set))
+    k_set.sort()
+    print k_set
+    for k in k_set:
         k = int(k)
-        find_n(k, 100, 10, 20000, .5, 5, 8)
+        print "K"
+        print k
+        print "Bernoulli"
+        find_n(k, 100, 10, 20000, .5, .5, .8, random_bernoulli)
+        print "Gaussian"
+        find_n(k, 100, 10, 20000, .5, .5, .8, random_gaussian)
+        #print "FJLT"
+        #find_n(k, 100, 10, 20000, .5, .5, .8, fjlt_derive)
 
