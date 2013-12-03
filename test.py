@@ -1,9 +1,10 @@
 import numpy as np
 import random
 import Image
-#import pywt
+import pywt
 from scipy.linalg import hadamard
 from matplotlib import pyplot as plt
+import matplotlib.cm as cm
 import math
 
 # k = O(delta n/log(2N/n) )
@@ -192,21 +193,41 @@ def haar_decomp(img_file_name):
     for i in xrange(1,len(coeffs)):
 	for j in coeffs[i]:
 		final_arr = np.concatenate((final_arr, np.ndarray.flatten(j)))
-    return params, final_arr
+    return params, coeffs[1:], final_arr
 
 def reverse_flatten(arr_format, values, index):
-    
-    return 0 
+    if not hasattr(arr_format, '__iter__'):
+        return index
 
-def harr_recomp(params, final_arr):
-    return 0
+    for i in xrange(len(arr_format)):
+        if hasattr(arr_format[i], '__iter__'):
+            index = reverse_flatten(arr_format[i], values, index)
+        else:
+            arr_format[i] = values[index]
+            index += 1
+
+    return index
+
+def haar_recomp(params, rest_coeff, final_arr):
+    reverse_flatten(rest_coeff, final_arr, 0)
+    final_tuple = [ params]
+    for i in rest_coeff:
+        final_tuple.append(i)
+    final_tuple = tuple(final_tuple)
+    return pywt.waverec2(final_tuple, 'haar')
+    
     
 
 if __name__ == "__main__":
+    """
     N = 100
     epsilon_low = 0.1
     epsilon_high = 0.5
     for k in np.linspace(N/(10**(10*epsilon_low**2)), N/(10**(10*epsilon_high**2))):
         k = int(k)
         find_n(k, 100, 10, 20000, .5, 5, 8)
+    """
+    a,b,c = haar_decomp("natural.jpg")
+    plt.imshow(haar_recomp(a, b, c), cmap= cm.Greys_r)
+    plt.show()
 
