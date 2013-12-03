@@ -1,7 +1,7 @@
 import numpy as np
 import random
 import Image
-import pywt
+#import pywt
 from scipy.linalg import hadamard
 from matplotlib import pyplot as plt
 import matplotlib.cm as cm
@@ -27,6 +27,61 @@ def fjlt_derive(n,N):
     
     H = hadamard(N)
     return np.matrix(T) * np.matrix(S) * np.matrix(H)
+
+def evaluate(a, j, q):
+    return sum((a[i] * (j ** i)) % q for i in range(len(a))) % q
+
+def reed_solomon_code(q,d):
+    mat = np.matrix(np.zeros((q * q, q ** (d + 1))))
+    a = [0] * (d + 1)
+    for i in range(q ** (d + 1)):
+        for j in range(q):
+            val = evaluate(a, j, q)
+            mat[j * q + val,i] = 1 / np.sqrt(q)
+
+        curr_ind = 0
+        a[0] += 1
+        if a[0] == q:
+            a[0] = 0
+        while a[curr_ind] == 0 and curr_ind < d:
+            curr_ind += 1
+            a[curr_ind] += 1
+            if a[curr_ind] == q:
+                a[curr_ind] = 0
+    print mat
+
+def error_correcting_code(k, N, epsilon):
+    alpha = epsilon / k
+    q_guess = int((math.log(n) / alpha) / (math.log(math.log(n)) + math.log(1 / alpha)))
+    d_guess = int(alpha * q_guess)
+    #print q_guess
+    #print d_guess
+    while q_guess ** (d_guess + 1) < N:
+        if alpha * q_guess >= d_guess + 1:
+            d_guess += 1
+        else:
+            q_guess += 1
+    last = 0
+    while q_guess ** (d_guess + 1) >= N:
+        if alpha * (q_guess - 1) >= d_guess:
+            q_guess -= 1
+            last = 1
+        else:
+            d_guess -= 1
+            last = 2
+    if last == 1:
+        q_guess += 1
+    elif last == 2:
+        d_guess += 1
+    else:
+        print "SHIIIIIET"
+    #print q_guess
+    #print d_guess
+    #print q_guess ** (d_guess + 1)
+    mat = reed_solomon_code(q_guess, d_guess)
+    return mat
+    
+
 
 def convert_codes_to_vector(codes,q,t):
     vector = np.zeros( (q*t,1) )
