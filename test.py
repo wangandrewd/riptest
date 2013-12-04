@@ -152,6 +152,7 @@ def gradient_descent(mat, k, vec, locs):
         for index in xrange(k):
             gprimex = 0
             for i in xrange(m):
+                assert(locs[index] < n)
                 gprimex += 2*mat[i][locs[index]]*np.dot(np.array(mat[i]),np.array(vec))
             hprimex = 2*vec[locs[index]]
             gx = np.linalg.norm(mat*vec)**2
