@@ -210,9 +210,9 @@ def find_n(k, N, trials, reps, epsilon, min_good, max_good, mat_gen):
             increasing = -1
         else:
             if increasing == 1:
-                guess_n /= 1.5
+                guess_n  = int(guess_n / 1.5)
             if increasing == -1:
-                guess_n *= 1.5
+                guess_n = int(guess_n * 1.5)
             break
         
     increasing = 0
