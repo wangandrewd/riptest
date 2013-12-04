@@ -7,6 +7,7 @@ from matplotlib import pyplot as plt
 import matplotlib.cm as cm
 import math
 
+
 # k = O(delta n/log(2N/n) )
 # 
 def random_bernoulli(n,N):
@@ -129,7 +130,7 @@ def test_matrix(mat, k, reps):
     worst_locs = None
     for i in xrange(num_unif_trials):
         vec, locs = generate_unif_vec(k, n)
-        error =  abs(1 - np.linalg.norm(mat * vec, ord='fro')**2 / np.linalg.norm(vec, ord='fro')**2)
+        error =  abs(1 - np.linalg.norm(mat * vec, ord='fro') / np.linalg.norm(vec, ord='fro'))
         if biggest_error < error:
             biggest_error = error
             worst_error_vec = vec
@@ -174,7 +175,9 @@ def run_matrix_tests(mat, k, reps):
     error, worst_error_vec, worst_locs = test_matrix(mat, k, reps)
     #return error
     vec, grad_error = gradient_descent(mat, k, worst_error_vec, worst_locs)
-    return max(error, grad_error)
+    print grad_error
+    #return error
+    return max(error, abs(grad_error))
 
 def run_test_suite(n, N, k, trials, reps, mat_gen):
     results = []
@@ -187,13 +190,32 @@ def run_test_suite(n, N, k, trials, reps, mat_gen):
 
 def find_n(k, N, trials, reps, epsilon, min_good, max_good, mat_gen):
     guesses = []
-    guess_n = int(1 / (epsilon ** 2) * k * math.log(N / (1.0 * k)))
+    guess_n = int(1 / (epsilon ** 2) * k * math.log(N / (1.0 * k)) / 2)
     increasing = 0
     round_fac = 1
     lower_bound = -1
     upper_bound = -1
     int_min_good = int(min_good * trials) - 1
     int_max_good = int(max_good * trials) - 1
+
+
+    while True:
+        results = run_test_suite(guess_n, N, k, 2, reps, mat_gen)
+        print guess_n
+        if (results[0] > epsilon or results[1] > epsilon) and increasing != -1:
+            guess_n *= 2
+            increasing = 1
+        elif (results[0] < epsilon or results[0] < epsilon) and increasing != 1:
+            guess_n /= 2
+            increasing = -1
+        else:
+            if increasing == 1:
+                guess_n /= 1.5
+            if increasing == -1:
+                guess_n *= 1.5
+            break
+        
+    increasing = 0
 
     while True:
         #print round_fac
@@ -210,7 +232,10 @@ def find_n(k, N, trials, reps, epsilon, min_good, max_good, mat_gen):
         results = run_test_suite(guess_n, N, k, trials, reps, mat_gen)
         print guess_n
         print results
+        p_guess_n = guess_n
         if results[int_min_good] > epsilon:
+            if guess_n > N:
+                return N
             if increasing == -1:
                 round_fac *= 2
             lower_bound = guess_n
@@ -223,6 +248,8 @@ def find_n(k, N, trials, reps, epsilon, min_good, max_good, mat_gen):
             guess_n = int(guess_n / (1.5 ** (1.0 / round_fac)))
             increasing = -1
         else:
+            return guess_n
+        if p_guess_n == guess_n:
             return guess_n
 
 
@@ -290,6 +317,7 @@ if __name__ == "__main__":
             k_set = list(set(k_set))
             k_set.sort()
             print k_set
+            #k_set = [50]
             for k in k_set:
                 k = int(k)
                 print "K"
@@ -300,7 +328,7 @@ if __name__ == "__main__":
                 print "Gaussian"
                 result_dict['gauss'][(N,k,epsilon)] = find_n(k, N, 30, 10000, epsilon, .5, .75, random_gaussian)
                 #print "FJLT"
-                result_dict['fjlt'][(N,k,epsilon)] = find_n(k, N, 30, 10000, epsilon, .5, .75, fjlt_derive)
+                #result_dict['fjlt'][(N,k,epsilon)] = find_n(k, N, 30, 10000, epsilon, .5, .75, fjlt_derive)
                 #find_n(k, 100, 10, 20000, epsilon, 5, 8)
     write_csv("THUNDERBEAR.txt", result_dict)
 
