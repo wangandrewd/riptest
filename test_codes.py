@@ -1,0 +1,365 @@
+import numpy as np
+import random
+import Image
+#import pywt
+from scipy.linalg import hadamard
+from matplotlib import pyplot as plt
+import matplotlib.cm as cm
+import math
+
+
+# k = O(delta n/log(2N/n) )
+# 
+def random_bernoulli(n,N):
+    return (2*np.random.randint(2, size=(n,N))-1)/np.sqrt(n)
+ 
+def random_gaussian(n,N):
+    gauss_mat = np.random.normal(loc=0,scale=1.0/np.sqrt(n),size=(n,N))
+    for i in xrange(N):
+        gauss_mat[:,i] = gauss_mat[:,i]/np.linalg.norm(gauss_mat[:,i])
+    return gauss_mat
+
+def fjlt_derive(n,N):
+    S = np.zeros((n,N))
+    for i in xrange(n):
+        S[i,np.random.randint(0,N)] = 1
+    S = S * np.sqrt(N)/np.sqrt(n)
+    T = random_bernoulli(n,n)
+    
+    H = hadamard(N)
+    return np.matrix(T) * np.matrix(S) * np.matrix(H)
+
+def evaluate(a, j, q):
+    return sum((a[i] * (j ** i)) % q for i in range(len(a))) % q
+
+def reed_solomon_code(q,d):
+    mat = np.matrix(np.zeros((q * q, q ** (d + 1))))
+    a = [0] * (d + 1)
+    for i in range(q ** (d + 1)):
+        for j in range(q):
+            val = evaluate(a, j, q)
+            mat[j * q + val,i] = 1 / np.sqrt(q)
+
+        #print mat[:,i]
+        curr_ind = 0
+        a[0] += 1
+        if a[0] == q:
+            a[0] = 0
+        while a[curr_ind] == 0 and curr_ind < d:
+            curr_ind += 1
+            a[curr_ind] += 1
+            if a[curr_ind] == q:
+                a[curr_ind] = 0
+    #print mat
+    return mat
+
+def is_prime(n):
+    for i in range(2,n / 2):
+        if n % i == 0:
+            return False
+    return True
+
+def error_correcting_code(k, N, epsilon):
+    alpha = epsilon / k
+    q_guess = int((math.log(N) / alpha) / (math.log(math.log(N)) + math.log(1 / alpha)))
+    d_guess = int(alpha * q_guess)
+    #print q_guess
+    #print d_guess
+    while q_guess ** (d_guess + 1) < N:
+        if alpha * q_guess >= d_guess + 1:
+            d_guess += 1
+        else:
+            q_guess += 1
+    last = 0
+    while q_guess ** (d_guess + 1) >= N:
+        if alpha * (q_guess - 1) >= d_guess:
+            q_guess -= 1
+            last = 1
+        else:
+            d_guess -= 1
+            last = 2
+    if last == 1:
+        q_guess += 1
+    elif last == 2:
+        d_guess += 1
+    else:
+        print "SHIIIIIET"
+    while True:
+        if is_prime(q_guess):
+            break
+        q_guess += 1
+    print "q, d\t%d\t%d" % (q_guess, d_guess)
+    #print q_guess
+    #print d_guess
+    #print q_guess ** (d_guess + 1)
+    mat = reed_solomon_code(q_guess, d_guess)
+    return mat[:,:N]
+    
+
+
+def convert_codes_to_vector(codes,q,t):
+    vector = np.zeros( (q*t,1) )
+    for i in xrange(len(codes)):
+        vector[q*i+codes[i]] = 1
+    return vector
+    
+def error_code_mat(q,t,N):
+    #generate random codes
+    mat = np.random.randomint(q, size=(t,N))
+    new_mat = np.zeros( (q*t,N) )
+    for i in xrange(N):
+        new_mat[:, i] = convert_codes_to_vector(mat[:,i])
+    new_mat = new_mat / np.sqrt(t)
+    return new_mat
+    
+ 
+def coherence(matrix):
+    row, col = matrix.shape
+    return max([ np.dot(matrix[:,i],matrix[:,j]) for i in xrange(col) for j in xrange(i+1, col)  ])
+
+def error_info(errors):
+    print "Average Error", np.average(errors)
+    print "Max Error", max(errors)
+    print "Min Error", min(errors)
+    print "Error Std", np.std(errors)
+    #plt.hist(errors, bins = len(set(errors)))
+    #plt.show()
+
+def generate_unif_vec(k,N):
+    rand = 2*np.random.random(k) -1
+    locs = random.sample(xrange(N), k)
+    vec = np.matrix(np.zeros(N)).T
+    for i in xrange(k):
+        vec[locs[i]][0] = rand[i]
+    return vec, locs
+
+def test_matrix(mat, k, reps):
+    m,n = mat.shape
+    num_unif_trials = reps
+
+    # Generate random vectors of length n that are k sparse uniform random values
+    biggest_error = -1
+    worst_error_vec = None
+    worst_locs = None
+    for i in xrange(num_unif_trials):
+        vec, locs = generate_unif_vec(k, n)
+        error =  abs(1 - np.linalg.norm(mat * vec, ord='fro') / np.linalg.norm(vec, ord='fro'))
+        if biggest_error < error:
+            biggest_error = error
+            #print error
+            #print locs
+            worst_error_vec = vec
+            worst_locs = locs
+    return biggest_error, worst_error_vec, worst_locs
+
+def gradient_descent(mat, k, vec, locs):
+    MAX_TRIAL = 1000
+    thresh = .000005
+    m,n = mat.shape
+    alpha = 0.3
+    prev_vec = np.copy(vec)
+    curr_error = np.linalg.norm(mat * vec )/np.linalg.norm(vec)-1
+    prev_error = 1
+    go_pos = curr_error > 0
+    if go_pos:
+        prev_error = 1
+    else:
+        prev_error = -1
+    #print curr_error
+    while (go_pos and curr_error - prev_error > thresh) or (not go_pos and prev_error - curr_error > thresh) and MAX_TRIAL > 0:
+        gradient = np.matrix(np.zeros(n)).T
+        #find the gradient
+        for index in xrange(k):
+            gprimex = 0
+            for i in xrange(m):
+                gprimex += 2*mat[i,locs[index]]*np.dot(np.array(mat[i]),np.array(vec))
+            hprimex = 2*vec[locs[index]]
+            gx = np.linalg.norm(mat*vec)**2
+            hx = np.linalg.norm(vec)**2
+            gradient[locs[index]][0] = (gprimex*hx - hprimex*gx)/(hx*hx)
+        #move in direction of gradient
+        prev_vec = np.copy(vec)
+        if go_pos:
+             vec = vec + alpha * gradient
+        else:
+            vec = vec - alpha*gradient
+        MAX_TRIAL -= 1
+        prev_error = curr_error
+        curr_error = np.linalg.norm(mat * vec )/np.linalg.norm(vec)-1
+        print curr_error, prev_error
+
+    return (prev_vec, curr_error)
+
+def run_matrix_tests(mat, k, reps):
+    error, worst_error_vec, worst_locs = test_matrix(mat, k, reps)
+    #return error
+    #if abs(error) > .5:
+    #    for i in range(len(worst_error_vec)):
+    #        if worst_error_vec[i] != 0:
+    #            print worst_error_vec[i]
+    #print error
+    vec, grad_error = gradient_descent(mat, k, worst_error_vec, worst_locs)
+    #print grad_error
+    #return error
+    return max(error, abs(grad_error))
+
+def run_test_suite(n, N, k, trials, reps, mat_gen):
+    results = []
+    for i in xrange(trials):
+        mat = mat_gen(n, N)
+        result = run_matrix_tests(mat, k, reps)
+        results.append(result)
+    results.sort()
+    return results
+
+def find_n(k, N, trials, reps, epsilon, min_good, max_good, mat_gen):
+    guesses = []
+    guess_n = int(1 / (epsilon ** 2) * k * math.log(N / (1.0 * k)) / 2)
+    increasing = 0
+    round_fac = 1
+    lower_bound = -1
+    upper_bound = -1
+    int_min_good = int(min_good * trials) - 1
+    int_max_good = int(max_good * trials) - 1
+
+
+    while True:
+        results = run_test_suite(guess_n, N, k, 2, reps, mat_gen)
+        print guess_n
+        if (results[0] > epsilon or results[1] > epsilon) and increasing != -1:
+            guess_n *= 2
+            increasing = 1
+        elif (results[0] < epsilon or results[0] < epsilon) and increasing != 1:
+            guess_n /= 2
+            increasing = -1
+        else:
+            if increasing == 1:
+                guess_n  = int(guess_n / 1.5)
+            if increasing == -1:
+                guess_n = int(guess_n * 1.5)
+            break
+        
+    increasing = 0
+
+    while True:
+        #print round_fac
+        #if lower_bound > 0 and guess_n <= lower_bound:
+        #    round_fac *= 2
+        #    guess_n = int(1.5 ** (1.0 / round_fac) * guess_n)
+        #    continue
+        #if upper_bound > 0 and guess_n >= upper_bound:
+        #    round_fac *= 2
+        #    guess_n = int(guess_n / (1.5 ** (1.0 / round_fac)))
+        #    continue
+
+        guesses.append(guess_n)
+        results = run_test_suite(guess_n, N, k, trials, reps, mat_gen)
+        print guess_n
+        print results
+        p_guess_n = guess_n
+        if results[int_min_good] > epsilon:
+            if guess_n > N:
+                return N
+            if increasing == -1:
+                round_fac *= 2
+            lower_bound = guess_n
+            guess_n = int(1.5 ** (1.0 / round_fac) * guess_n)
+            increasing = 1
+        elif results[int_max_good] < epsilon:
+            if increasing == 1:
+                round_fac *= 2
+            upper_bound = guess_n
+            guess_n = int(guess_n / (1.5 ** (1.0 / round_fac)))
+            increasing = -1
+        else:
+            return guess_n
+        if p_guess_n == guess_n:
+            return guess_n
+
+
+def haar_decomp(img_file_name):
+    img = Image.open(img_file_name).convert('L')
+    x,y = img.size
+    coeffs = pywt.wavedec2(img, 'haar', level=pywt.dwt_max_level(max(x,y), pywt.Wavelet('haar')))
+    params = coeffs[0]
+    final_arr = []
+    for i in xrange(1,len(coeffs)):
+	    for j in coeffs[i]:
+		    final_arr = np.concatenate((final_arr, np.ndarray.flatten(j)))
+    return params, coeffs[1:], final_arr
+
+def reverse_flatten(arr_format, values, index):
+    if not hasattr(arr_format, '__iter__'):
+        return index
+
+    for i in xrange(len(arr_format)):
+        if hasattr(arr_format[i], '__iter__'):
+            index = reverse_flatten(arr_format[i], values, index)
+        else:
+            arr_format[i] = values[index]
+            index += 1
+
+    return index
+
+def haar_recomp(params, rest_coeff, final_arr):
+    reverse_flatten(rest_coeff, final_arr, 0)
+    final_tuple = [ params]
+    for i in rest_coeff:
+        final_tuple.append(i)
+    final_tuple = tuple(final_tuple)
+    return pywt.waverec2(final_tuple, 'haar')
+
+
+#format of result_dict
+#result_dict -> matrix type -> N,k,epsilon -> n
+def write_csv(file_name, result_dict):
+    f = open(file_name, 'w')
+    print_str = "%d, %d, %f,"
+    for matrix_type in result_dict.keys():
+        f.write(matrix_type)
+        f.write("\n")
+        for nkepsilon in result_dict[matrix_type].keys():
+            print nkepsilon
+            f.write( print_str % nkepsilon )
+            f.write( str(result_dict[matrix_type][nkepsilon]))
+            f.write("\n")
+    f.close()
+
+if __name__ == "__main__":
+    
+    result_dict = dict(bern=dict(), gauss=dict(), fjlt=dict(), codes = dict())
+    Ns = [1024, 2048, 4096, 8192, 16384]
+    epsilons = [0.5]
+    for N in Ns:
+        for epsilon in epsilons:
+            values_of_k = 5
+            value_of_k = 2
+            while 1.0/ epsilon ** 2 * value_of_k * math.log(N * 1.0 / value_of_k) < N:
+                value_of_k  = int(value_of_k * 1.5)
+            value_of_k = max(int(value_of_k / 1.5), 2)
+            value_of_k = epsilon * math.sqrt(N)
+            k_set = [int((value_of_k / 2) ** (i / (1.0 * values_of_k)) * 2) for i in range(values_of_k)]
+            k_set = list(set(k_set))
+            k_set.sort()
+            print k_set
+            #k_set = [50]
+            for k in k_set:
+                k = int(k)
+                print "K"
+                print k
+                #print "Bernoulli"
+                mat = error_correcting_code(k, N, epsilon)
+                n, _ = mat.shape
+                print "N, k, epsilon, n: %d\t%d\t%f\t%d\t" % (N, k, epsilon, n)
+                result_dict['codes'][(N,k,epsilon)] = run_matrix_tests(mat, k, 10000)
+                print result_dict['codes'][(N,k,epsilon)]
+                #result_dict['bern'][(N,k,epsilon)] =   find_n(k, N, 30, 10000, epsilon, .5, .75, random_bernoulli)
+                #print "Gaussian"
+                #result_dict['gauss'][(N,k,epsilon)] = find_n(k, N, 30, 10000, epsilon, .5, .75, random_gaussian)
+                #print "FJLT"
+                #result_dict['fjlt'][(N,k,epsilon)] = find_n(k, N, 30, 10000, epsilon, .5, .75, fjlt_derive)
+                #find_n(k, 100, 10, 20000, epsilon, 5, 8)
+    write_csv("THUNDERBEAR.txt", result_dict)
+
+
+
