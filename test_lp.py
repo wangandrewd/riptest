@@ -33,11 +33,11 @@ def fjlt_derive(n,N):
 def evaluate(a, j, q):
     return sum((a[i] * (j ** i)) % q for i in range(len(a))) % q
 
-def reed_solomon_code(q,d):
-    mat = np.matrix(np.zeros((q * q, q ** (d + 1))))
+def reed_solomon_code(q,d,N):
+    mat = np.matrix(np.zeros((q * q, N)))
     a = [0] * (d + 1)
-    for i in range(q ** (d + 1)):
-        for j in range(q):
+    for i in xrange(N):
+        for j in xrange(q):
             val = evaluate(a, j, q)
             mat[j * q + val,i] = 1 / np.sqrt(q)
 
@@ -50,11 +50,11 @@ def reed_solomon_code(q,d):
             a[curr_ind] += 1
             if a[curr_ind] == q:
                 a[curr_ind] = 0
-    print mat
+    return mat
 
 def error_correcting_code(k, N, epsilon):
     alpha = epsilon / k
-    q_guess = int((math.log(n) / alpha) / (math.log(math.log(n)) + math.log(1 / alpha)))
+    q_guess = int((math.log(N) / alpha) / (math.log(math.log(N)) + math.log(1 / alpha)))
     d_guess = int(alpha * q_guess)
     #print q_guess
     #print d_guess
@@ -77,10 +77,10 @@ def error_correcting_code(k, N, epsilon):
         d_guess += 1
     else:
         print "SHIIIIIET"
-    #print q_guess
-    #print d_guess
-    #print q_guess ** (d_guess + 1)
-    mat = reed_solomon_code(q_guess, d_guess)
+    print q_guess
+    print d_guess
+    print q_guess ** (d_guess + 1)
+    mat = reed_solomon_code(q_guess, d_guess, N)
     return mat
  
 def coherence(matrix):
@@ -195,10 +195,12 @@ def lp_to_file(pi, y, lower, higher):
             else:
                 f.write("+%fx%dpos-%fx%dneg" % (pi[i,j], j,pi[i,j], j))
         f.write("=%f;" % (y[i]))
+    """
     for i in xrange(n):
         f.write("x%dpos-x%dneg>=%f;" % (i, i, lower))
     for i in xrange(n):
         f.write("x%dpos - x%dneg<=%f;" % (i, i, higher))
+    """
     for i in xrange(n):
         f.write("x%dpos >= 0;x%dneg >=0;" % (i,i))
     f.close()
@@ -272,23 +274,33 @@ def haar_recomp(params, rest_coeff, final_arr):
 if __name__ == "__main__":
     #N = 2096
     #n = 35
-    #k = 82
-    params, coeffs, final_arr = haar_decomp("dog.jpg")
+    k = 5
+    epsilon = np.sqrt(2)-1
+    params, coeffs, final_arr = haar_decomp("soccer.jpg")
     N =  final_arr.shape[0]
     print N
     final_arr = np.matrix(final_arr).T
+    count = 0
+    for i in final_arr:
+        if abs(i) <= 0.01:
+            count += 1
+    print count
     #compress final_arr
     #final_arr,loc = generate_unif_vec(5,10)
-
-    mat = random_bernoulli(1000,N)
+    
+    mat = error_correcting_code(k, N, epsilon)#random_gaussian(435,N)#random_bernoulli(435, N)#
+    print mat.shape
     compressed = mat * final_arr
-
+    
     #decompress
     lp_to_file(mat, compressed, min(final_arr), max(final_arr))
-    lp_solve_cmd_line()    
+    lp_solve_cmd_line()
     solved = solve_to_x(N)
+
+    print "error", np.linalg.norm(final_arr-solved)
 
     plt.imshow(haar_recomp(params, coeffs, solved), cmap=cm.Greys_r)
     plt.show()
+    
     
     
