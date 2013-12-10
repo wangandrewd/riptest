@@ -178,9 +178,9 @@ def run_test_suite(n, N, k, trials, reps, mat_gen):
     return results
 
 if __name__ == "__main__":
-    N = 2096
-    n = 35
-    k = 82
-    epsilon = 0.5
+    N = 8241
+    n = 435
+    k = 3264
+    epsilon = np.sqrt(2)-1
     reps = 20000
     error_info(run_matrix_tests(random_gaussian(n,N), k, reps), reps, N, n, k, epsilon)
